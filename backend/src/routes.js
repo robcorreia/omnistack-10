@@ -1,23 +1,43 @@
 const { Router } = require('express');
 const axios = require('axios');
+const Dev = require('./models/Dev');
+
 
 const routes = Router();
 
-const devs = [];
 
-/* routes.get('/devs', (req, res) => {
-  return res.json(devs);
+routes.get('/devs', (req, res) => {
+  return res.json();
 })
- */
+
 routes.post('/devs', async (req, res) => {
-  const { github_username } = req.body;
-  devs.push(req.body);
-  console.log(github_username);
+  const { github_username, techs, latitude, longitude } = req.body;
 
   const response = await axios.get(`https://api.github.com/users/${github_username}`);
-  console.log(response.data);
 
-  return res.json();
+  const { name = login, avatar_url, bio } = response.data;
+
+  //pega a string e transforma em array quebrando pela ',' depois
+  //com map percorre o array e pra cada tech ele limpa os espaços em branco
+  // console.log(techs.split(',').map(tech => tech.trim()));
+  const techsArray = techs.split(',').map(tech => tech.trim());
+
+  const location = {
+    type: 'Point',
+    coordinates: [longitude, latitude],
+  }
+
+  const dev = await Dev.create({
+    github_username : github_username,
+    name,
+    avatar_url,
+    bio,
+    techs : techsArray,
+    location,
+  })
+
+  return res.json(dev);
+
 })
 
 module.exports = routes;
